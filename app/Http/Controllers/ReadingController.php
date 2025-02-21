@@ -61,7 +61,7 @@ class ReadingController extends Controller
     {
         return Inertia::render('Readings/Show', [
             'client' => $client,
-            'reading' => $reading
+            'reading' => $reading->load('invoice')
         ]);
     }
 

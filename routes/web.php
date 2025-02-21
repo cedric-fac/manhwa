@@ -41,6 +41,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/clients/{client}/readings', [ReadingController::class, 'store'])->name('readings.store');
     Route::get('/clients/{client}/readings/{reading}', [ReadingController::class, 'show'])->name('readings.show');
     Route::post('/readings/sync', [ReadingController::class, 'sync'])->name('readings.sync');
+
+    // Invoice Routes
+    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::post('/readings/{reading}/invoice', [InvoiceController::class, 'generate'])->name('invoices.generate');
+    Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+    Route::patch('/invoices/{invoice}/status', [InvoiceController::class, 'updateStatus'])->name('invoices.status.update');
+    Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
+    Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
 });
 
 require __DIR__.'/auth.php';
