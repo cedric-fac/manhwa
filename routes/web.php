@@ -35,6 +35,12 @@ Route::middleware('auth')->group(function () {
     })->name('clients.edit');
     Route::put('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
     Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
+
+    // Meter Reading Routes
+    Route::get('/clients/{client}/readings', [ReadingController::class, 'index'])->name('readings.index');
+    Route::post('/clients/{client}/readings', [ReadingController::class, 'store'])->name('readings.store');
+    Route::get('/clients/{client}/readings/{reading}', [ReadingController::class, 'show'])->name('readings.show');
+    Route::post('/readings/sync', [ReadingController::class, 'sync'])->name('readings.sync');
 });
 
 require __DIR__.'/auth.php';

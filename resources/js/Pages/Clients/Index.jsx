@@ -2,7 +2,7 @@ import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
-import { PlusIcon, PencilIcon, TrashIcon } from 'lucide-react';
+import { PlusIcon, PencilIcon, TrashIcon, GaugeIcon } from 'lucide-react';
 
 export default function Index({ auth, clients }) {
     const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -83,14 +83,23 @@ export default function Index({ auth, clients }) {
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex justify-end gap-2">
                                                     <button
+                                                        onClick={() => router.get(route('readings.index', client.id))}
+                                                        className="text-green-600 hover:text-green-900"
+                                                        title="Relevés"
+                                                    >
+                                                        <GaugeIcon className="w-5 h-5" />
+                                                    </button>
+                                                    <button
                                                         onClick={() => router.get(route('clients.edit', client.id))}
                                                         className="text-blue-600 hover:text-blue-900"
+                                                        title="Modifier"
                                                     >
                                                         <PencilIcon className="w-5 h-5" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(client.id)}
                                                         className="text-red-600 hover:text-red-900"
+                                                        title="Supprimer"
                                                     >
                                                         <TrashIcon className="w-5 h-5" />
                                                     </button>
