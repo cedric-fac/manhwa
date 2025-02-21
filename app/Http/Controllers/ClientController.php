@@ -27,6 +27,7 @@ class ClientController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:15', 'regex:/^\+237\d{9}$/'],
+            'email' => ['nullable', 'email', 'max:255'],
             'address' => ['required', 'string', 'max:255'],
             'tva_rate' => ['required', 'numeric', 'between:0,100']
         ]);
@@ -65,6 +66,7 @@ class ClientController extends Controller
                 'regex:/^\+237\d{9}$/',
                 Rule::unique('clients')->ignore($client->id)
             ],
+            'email' => ['nullable', 'email', 'max:255'],
             'address' => ['required', 'string', 'max:255'],
             'tva_rate' => ['required', 'numeric', 'between:0,100']
         ]);

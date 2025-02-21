@@ -10,6 +10,7 @@ export default function Form({ auth, client }) {
     const { data, setData, post, put, processing, errors } = useForm({
         name: client?.name || '',
         phone: client?.phone || '+237',
+        email: client?.email || '',
         address: client?.address || '',
         tva_rate: client?.tva_rate || 19.25,
     });

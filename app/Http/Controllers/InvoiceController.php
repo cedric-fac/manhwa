@@ -120,8 +120,13 @@ class InvoiceController extends Controller
      */
     public function download(Invoice $invoice)
     {
-        // TODO: Implement PDF generation
-        return back()->with('info', 'Génération PDF à implémenter.');
+        $invoice->load(['client', 'reading']);
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', [
+            'invoice' => $invoice
+        ]);
+
+        return $pdf->download("facture_{$invoice->number}.pdf");
     }
 
     /**
@@ -129,7 +134,22 @@ class InvoiceController extends Controller
      */
     public function send(Invoice $invoice)
     {
-        // TODO: Implement email sending
-        return back()->with('info', 'Envoi par email à implémenter.');
+        $invoice->load(['client', 'reading']);
+
+        // Generate PDF
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', [
+            'invoice' => $invoice
+        ]);
+        
+        // Send notification with PDF attachment
+        $invoice->client->notify(new \App\Notifications\InvoiceNotification(
+            $invoice,
+            $pdf->output()
+        ));
+
+        // Update invoice status
+        $invoice->update(['status' => InvoiceStatus::SENT]);
+
+        return back()->with('success', 'Facture envoyée avec succès.');
     }
 }
