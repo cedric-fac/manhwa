@@ -1,47 +1,36 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ReadingController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\OcrTrainingController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return Inertia::render('Welcome');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+    // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Client Management Routes
-    Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
-    Route::get('/clients/create', function () {
-        return Inertia::render('Clients/Form');
-    })->name('clients.create');
-    Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
-    Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
-    Route::get('/clients/{client}/edit', function (App\Models\Client $client) {
-        return Inertia::render('Clients/Form', ['client' => $client]);
-    })->name('clients.edit');
-    Route::put('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
-    Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
+    // Client Routes
+    Route::resource('clients', ClientController::class);
 
-    // Meter Reading Routes
+    // Reading Routes
     Route::get('/clients/{client}/readings', [ReadingController::class, 'index'])->name('readings.index');
     Route::get('/clients/{client}/readings/create', [ReadingController::class, 'create'])->name('readings.create');
     Route::post('/clients/{client}/readings', [ReadingController::class, 'store'])->name('readings.store');
     Route::get('/clients/{client}/readings/{reading}', [ReadingController::class, 'show'])->name('readings.show');
-    Route::post('/readings/sync', [ReadingController::class, 'sync'])->name('readings.sync');
 
     // Invoice Routes
     Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
@@ -50,9 +39,22 @@ Route::middleware('auth')->group(function () {
     Route::patch('/invoices/{invoice}/status', [InvoiceController::class, 'updateStatus'])->name('invoices.status.update');
     Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
     Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
-});
 
-// Dashboard Route
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Notification Routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.read.all');
+    });
+
+    // OCR Training Routes (Admin Only)
+    Route::middleware('ocr.admin')->prefix('ocr')->group(function () {
+        Route::get('/dashboard', [OcrTrainingController::class, 'index'])->name('ocr.dashboard');
+        Route::get('/review/{trainingData}', [OcrTrainingController::class, 'review'])->name('ocr.review');
+        Route::post('/update/{trainingData}', [OcrTrainingController::class, 'update'])->name('ocr.update');
+        Route::post('/store/{reading}', [OcrTrainingController::class, 'store'])->name('ocr.store');
+        Route::get('/statistics', [OcrTrainingController::class, 'statistics'])->name('ocr.statistics');
+    });
+});
 
 require __DIR__.'/auth.php';

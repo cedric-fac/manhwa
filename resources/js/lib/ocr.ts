@@ -1,7 +1,7 @@
 import { createWorker } from 'tesseract.js';
 import { useState, useEffect } from 'react';
 
-interface OCRResult {
+export interface OCRResult {
     text: string;
     confidence: number;
     numbers: number[];

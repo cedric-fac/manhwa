@@ -1,17 +1,43 @@
 import React, { useCallback, useState } from 'react';
-import { useOCR } from '@/lib/ocr';
+import { useOCR, type OCRResult } from '@/lib/ocr';
+import route from 'ziggy-js';
 
-interface MeterReadingInputProps {
+interface Props {
     onReadingCapture: (reading: number, imageFile: File) => void;
     isUploading?: boolean;
     error?: string;
+    readingId?: number;
 }
 
-export function MeterReadingInput({ onReadingCapture, isUploading, error }: MeterReadingInputProps) {
+export function MeterReadingInput({ onReadingCapture, isUploading, error, readingId }: Props) {
     const [preview, setPreview] = useState<string | null>(null);
     const [suggestions, setSuggestions] = useState<number[]>([]);
     const [selectedReading, setSelectedReading] = useState<number | null>(null);
     const { processImage, isProcessing, error: ocrError } = useOCR();
+
+    const storeOcrTraining = async (imageFile: File, result: OCRResult) => {
+        if (!readingId) return;
+
+        try {
+            await fetch(route('ocr.store', readingId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    original_text: result.text,
+                    confidence: result.confidence,
+                    metadata: {
+                        numbers: result.numbers,
+                        processed_at: new Date().toISOString()
+                    }
+                })
+            });
+        } catch (error) {
+            console.error('Failed to store OCR training data:', error);
+        }
+    };
 
     const handleImageCapture = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -27,6 +53,7 @@ export function MeterReadingInput({ onReadingCapture, isUploading, error }: Mete
             if (result?.numbers.length) {
                 setSuggestions(result.numbers);
                 setSelectedReading(result.numbers[0]); // Select the first (most likely) reading
+                await storeOcrTraining(file, result);
             }
         } catch (err) {
             console.error('Failed to process image:', err);

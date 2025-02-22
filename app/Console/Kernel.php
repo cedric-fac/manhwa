@@ -8,14 +8,29 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 class Kernel extends ConsoleKernel
 {
     /**
+     * The Artisan commands provided by your application.
+     *
+     * @var array
+     */
+    protected $commands = [
+        Commands\OcrPerformanceReport::class,
+    ];
+
+    /**
      * Define the application's command schedule.
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Send invoice reminders every day at 8 AM
-        $schedule->command('app:send-invoice-reminders')
-                ->dailyAt('08:00')
-                ->appendOutputTo(storage_path('logs/invoice-reminders.log'));
+        // OCR Performance Report - Daily at 8 AM
+        $schedule->command('ocr:report')
+            ->dailyAt('08:00')
+            ->timezone('Europe/Paris')
+            ->emailOutputOnFailure(User::where('is_admin', true)->pluck('email')->toArray());
+
+        // Invoice Reminders
+        $schedule->command('send:invoice-reminders')
+            ->dailyAt('09:00')
+            ->timezone('Europe/Paris');
     }
 
     /**
