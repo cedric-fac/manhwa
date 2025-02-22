@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\OcrTrainingData;
-use App\Models\Reading;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Gate;
 
 class OcrTrainingController extends Controller
 {
@@ -14,88 +14,102 @@ class OcrTrainingController extends Controller
      */
     public function index()
     {
+        // Check if user can review OCR
+        Gate::authorize('review-ocr');
+
+        $stats = OcrTrainingData::getStatistics();
+        $pendingReviews = OcrTrainingData::with('reading.client')
+            ->where('verified', false)
+            ->orWhere('confidence', '<', 80)
+            ->latest()
+            ->paginate(10);
+
         return Inertia::render('Ocr/Dashboard', [
-            'statistics' => OcrTrainingData::getStatistics(),
-            'pending_reviews' => OcrTrainingData::with('reading.client')
-                ->where(function ($query) {
-                    $query->where('verified', false)
-                        ->orWhere('confidence', '<', 80);
-                })
-                ->latest()
-                ->paginate(10)
+            'stats' => $stats,
+            'pendingReviews' => $pendingReviews
         ]);
     }
 
     /**
-     * Show the OCR review interface.
+     * Display the OCR review interface.
      */
     public function review(OcrTrainingData $trainingData)
     {
+        Gate::authorize('review-ocr');
+
+        $trainingData->load('reading.client');
+
         return Inertia::render('Ocr/Review', [
-            'training_data' => $trainingData->load('reading.client'),
+            'trainingData' => $trainingData
         ]);
     }
 
     /**
-     * Update the OCR training data with corrections.
+     * Update OCR training data with corrections.
      */
     public function update(Request $request, OcrTrainingData $trainingData)
     {
+        Gate::authorize('review-ocr');
+
         $validated = $request->validate([
-            'corrected_text' => ['required', 'string'],
-            'feedback' => ['nullable', 'string'],
+            'corrected_text' => 'required|string',
+            'feedback' => 'nullable|string'
         ]);
 
-        $trainingData->addCorrection($validated['corrected_text']);
+        $trainingData->update([
+            'corrected_text' => $validated['corrected_text'],
+            'verified' => true,
+            'metadata' => array_merge($trainingData->metadata ?? [], [
+                'feedback' => $validated['feedback'],
+                'reviewed_at' => now()->toIso8601String()
+            ])
+        ]);
 
-        if ($request->has('feedback')) {
-            $trainingData->update([
-                'metadata' => array_merge($trainingData->metadata ?? [], [
-                    'feedback' => $validated['feedback'],
-                    'corrected_at' => now()->toIso8601String(),
-                ])
-            ]);
-        }
+        event('ocr.training.reviewed', $trainingData);
 
         return redirect()
             ->route('ocr.dashboard')
-            ->with('success', 'Correction enregistrée avec succès.');
+            ->with('success', 'Correction enregistrée avec succès');
     }
 
     /**
-     * Store a new OCR training sample.
+     * Store new OCR training data.
      */
-    public function store(Reading $reading, Request $request)
+    public function store(Request $request, $readingId)
     {
         $validated = $request->validate([
-            'original_text' => ['required', 'string'],
-            'confidence' => ['required', 'numeric', 'between:0,100'],
-            'metadata' => ['nullable', 'array'],
+            'original_text' => 'required|string',
+            'confidence' => 'required|numeric',
+            'metadata' => 'required|array'
         ]);
 
         $trainingData = OcrTrainingData::create([
-            'reading_id' => $reading->id,
+            'reading_id' => $readingId,
             'original_text' => $validated['original_text'],
-            'corrected_text' => (string) $reading->value,
             'confidence' => $validated['confidence'],
             'metadata' => $validated['metadata'],
-            'image_url' => $reading->photo_url,
-            'verified' => false,
+            'verified' => false
         ]);
 
+        event('ocr.training.created', $trainingData);
+
         return response()->json([
-            'message' => 'Training data stored successfully',
-            'training_data_id' => $trainingData->id
+            'message' => 'Données d\'entraînement OCR enregistrées',
+            'training_data' => $trainingData
         ]);
     }
 
     /**
-     * Get OCR training statistics.
+     * Display OCR performance statistics.
      */
     public function statistics()
     {
-        return response()->json([
-            'statistics' => OcrTrainingData::getStatistics()
+        Gate::authorize('review-ocr');
+
+        $stats = OcrTrainingData::getStatistics();
+        
+        return Inertia::render('Ocr/Statistics', [
+            'stats' => $stats
         ]);
     }
 }

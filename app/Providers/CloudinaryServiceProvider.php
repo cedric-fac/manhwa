@@ -3,28 +3,25 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Storage;
-use League\Flysystem\Filesystem;
-use App\Support\CloudinaryAdapter;
+use Cloudinary\Cloudinary;
 
 class CloudinaryServiceProvider extends ServiceProvider
 {
-    public function register()
+    /**
+     * Register services.
+     */
+    public function register(): void
     {
-        //
+        $this->app->singleton(Cloudinary::class, function ($app) {
+            return new Cloudinary(config('services.cloudinary.url'));
+        });
     }
 
-    public function boot()
+    /**
+     * Bootstrap services.
+     */
+    public function boot(): void
     {
-        Storage::extend('cloudinary', function ($app, $config) {
-            $client = new \Cloudinary\Cloudinary([
-                'cloud_name' => $config['cloud_name'],
-                'api_key' => $config['key'],
-                'api_secret' => $config['secret'],
-                'secure' => true
-            ]);
-
-            return new Filesystem(new CloudinaryAdapter($client));
-        });
+        //
     }
 }

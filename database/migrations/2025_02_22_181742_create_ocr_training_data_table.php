@@ -14,16 +14,16 @@ return new class extends Migration
         Schema::create('ocr_training_data', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reading_id')->constrained()->cascadeOnDelete();
-            $table->string('original_text');  // Original OCR result
-            $table->string('corrected_text'); // User corrected value
-            $table->decimal('confidence', 5, 2); // Original OCR confidence
-            $table->json('metadata')->nullable(); // Additional OCR data
-            $table->string('image_url'); // URL to the meter image
-            $table->boolean('verified')->default(false); // Whether this sample has been verified
+            $table->string('original_text');
+            $table->string('corrected_text')->nullable();
+            $table->decimal('confidence', 5, 2);
+            $table->json('metadata')->nullable();
+            $table->string('image_url');
+            $table->boolean('verified')->default(false);
             $table->timestamps();
 
-            $table->index(['confidence']); // For querying low confidence results
-            $table->index(['verified']); // For finding unverified samples
+            $table->index(['confidence']);
+            $table->index(['verified']);
         });
     }
 

@@ -20,7 +20,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'is_admin',
+        'is_admin'
     ];
 
     /**
@@ -41,11 +41,11 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'is_admin' => 'boolean',
+        'is_admin' => 'boolean'
     ];
 
     /**
-     * Check if user can review OCR results.
+     * Check if the user can review OCR results
      */
     public function canReviewOcr(): bool
     {
@@ -53,15 +53,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the route key for the model.
-     */
-    public function getRouteKeyName(): string
-    {
-        return 'id';
-    }
-
-    /**
-     * Get unread OCR review notifications.
+     * Get unread OCR notifications
      */
     public function getUnreadOcrNotifications()
     {
@@ -71,7 +63,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get OCR review notifications count.
+     * Get OCR notifications count
      */
     public function getOcrNotificationsCount(): int
     {

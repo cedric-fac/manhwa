@@ -48,12 +48,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // OCR Training Routes (Admin Only)
-    Route::middleware('ocr.admin')->prefix('ocr')->group(function () {
-        Route::get('/dashboard', [OcrTrainingController::class, 'index'])->name('ocr.dashboard');
-        Route::get('/review/{trainingData}', [OcrTrainingController::class, 'review'])->name('ocr.review');
-        Route::post('/update/{trainingData}', [OcrTrainingController::class, 'update'])->name('ocr.update');
-        Route::post('/store/{reading}', [OcrTrainingController::class, 'store'])->name('ocr.store');
-        Route::get('/statistics', [OcrTrainingController::class, 'statistics'])->name('ocr.statistics');
+    Route::middleware('ocr.admin')->group(function () {
+        Route::get('/ocr/dashboard', [OcrTrainingController::class, 'index'])->name('ocr.dashboard');
+        Route::get('/ocr/review/{trainingData}', [OcrTrainingController::class, 'review'])->name('ocr.review');
+        Route::post('/ocr/update/{trainingData}', [OcrTrainingController::class, 'update'])->name('ocr.update');
+        Route::post('/ocr/store/{reading}', [OcrTrainingController::class, 'store'])->name('ocr.store');
+        Route::get('/ocr/statistics', [OcrTrainingController::class, 'statistics'])->name('ocr.statistics');
     });
 });
 

@@ -2,10 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class Reading extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'client_id',
         'value',
@@ -16,38 +24,56 @@ class Reading extends Model
     ];
 
     protected $casts = [
+        'value' => 'decimal:2',
         'read_at' => 'datetime',
         'synced' => 'boolean',
         'metadata' => 'array'
     ];
 
-    /**
-     * Check if the reading was processed by OCR.
-     */
-    public function isOcrProcessed(): bool
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class);
+    }
+
+    public function trainingData(): HasOne
+    {
+        return $this->hasOne(OcrTrainingData::class);
+    }
+
+    public function isInvoiced(): bool
+    {
+        return $this->invoice()->exists();
+    }
+
+    public function addPhotoFromFile(UploadedFile $file): void
+    {
+        $path = Storage::disk('cloudinary')->put(
+            'meter-readings/' . $this->client_id,
+            $file
+        );
+
+        $photoUrl = Storage::disk('cloudinary')->url($path);
+
+        $this->update([
+            'photo_url' => $photoUrl
+        ]);
+    }
+
+    public function hasOcrData(): bool
     {
         return isset($this->metadata['ocr']);
     }
 
-    /**
-     * Get the OCR confidence score.
-     */
     public function getOcrConfidence(): ?float
     {
         return $this->metadata['ocr']['confidence'] ?? null;
     }
 
-    /**
-     * Get all OCR suggestions.
-     */
-    public function getOcrSuggestions(): array
-    {
-        return $this->metadata['ocr']['suggestions'] ?? [];
-    }
-
-    /**
-     * Add OCR metadata to the reading.
-     */
     public function addOcrMetadata(array $ocrData): void
     {
         $this->metadata = array_merge($this->metadata ?? [], [
@@ -56,27 +82,5 @@ class Reading extends Model
             ], $ocrData)
         ]);
         $this->save();
-    }
-
-    protected $casts = [
-        'value' => 'decimal:2',
-        'read_at' => 'datetime',
-        'synced' => 'boolean'
-    ];
-
-    /**
-     * Get the client that owns the reading.
-     */
-    public function client()
-    {
-        return $this->belongsTo(Client::class);
-    }
-
-    /**
-     * Get the associated invoice if exists.
-     */
-    public function invoice()
-    {
-        return $this->hasOne(Invoice::class);
     }
 }

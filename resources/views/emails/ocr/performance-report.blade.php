@@ -5,13 +5,13 @@
 ## {{ $section['heading'] }}
 
 @foreach ($section['items'] as $item)
-- {{ $item }}
+* {{ $item }}
 @endforeach
 
 @endforeach
 
 @component('mail::button', ['url' => route('ocr.dashboard')])
-Voir le tableau de bord OCR
+Voir le Tableau de Bord OCR
 @endcomponent
 
 Merci,<br>

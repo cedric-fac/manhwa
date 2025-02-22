@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use App\Notifications\OcrReviewNeededNotification;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Notification;
 
 class OcrTrainingData extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'reading_id',
         'original_text',
