@@ -107,12 +107,29 @@ class InvoiceController extends Controller
             'status' => ['required', 'string', 'in:' . implode(',', array_column(InvoiceStatus::cases(), 'value'))]
         ]);
 
-        $invoice->update([
-            'status' => $validated['status'],
-            'paid_at' => $validated['status'] === InvoiceStatus::PAID->value ? now() : null
-        ]);
+        try {
+            DB::beginTransaction();
 
-        return back()->with('success', 'Statut de la facture mis à jour.');
+            $invoice->update([
+                'status' => $validated['status'],
+                'paid_at' => $validated['status'] === InvoiceStatus::PAID->value ? now() : null
+            ]);
+
+            // Create a "paid" reminder record if status is PAID
+            if ($validated['status'] === InvoiceStatus::PAID->value) {
+                $invoice->reminders()->create([
+                    'type' => 'payment',
+                    'sent' => true,
+                    'sent_at' => now()
+                ]);
+            }
+
+            DB::commit();
+            return back()->with('success', 'Statut de la facture mis à jour.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Erreur lors de la mise à jour du statut.');
+        }
     }
 
     /**

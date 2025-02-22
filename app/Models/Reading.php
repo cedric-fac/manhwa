@@ -11,8 +11,52 @@ class Reading extends Model
         'value',
         'photo_url',
         'read_at',
-        'synced'
+        'synced',
+        'metadata'
     ];
+
+    protected $casts = [
+        'read_at' => 'datetime',
+        'synced' => 'boolean',
+        'metadata' => 'array'
+    ];
+
+    /**
+     * Check if the reading was processed by OCR.
+     */
+    public function isOcrProcessed(): bool
+    {
+        return isset($this->metadata['ocr']);
+    }
+
+    /**
+     * Get the OCR confidence score.
+     */
+    public function getOcrConfidence(): ?float
+    {
+        return $this->metadata['ocr']['confidence'] ?? null;
+    }
+
+    /**
+     * Get all OCR suggestions.
+     */
+    public function getOcrSuggestions(): array
+    {
+        return $this->metadata['ocr']['suggestions'] ?? [];
+    }
+
+    /**
+     * Add OCR metadata to the reading.
+     */
+    public function addOcrMetadata(array $ocrData): void
+    {
+        $this->metadata = array_merge($this->metadata ?? [], [
+            'ocr' => array_merge([
+                'processed_at' => now()->toIso8601String()
+            ], $ocrData)
+        ]);
+        $this->save();
+    }
 
     protected $casts = [
         'value' => 'decimal:2',

@@ -13,7 +13,8 @@ class Invoice extends Model
         'tva',
         'amount_ttc',
         'status',
-        'due_date'
+        'due_date',
+        'paid_at'
     ];
 
     protected $casts = [
@@ -21,8 +22,39 @@ class Invoice extends Model
         'tva' => 'decimal:2',
         'amount_ttc' => 'decimal:2',
         'due_date' => 'date',
-        'status' => InvoiceStatus::class
+        'status' => InvoiceStatus::class,
+        'paid_at' => 'datetime'
     ];
+
+    /**
+     * Get the reminders for the invoice.
+     */
+    public function reminders()
+    {
+        return $this->hasMany(InvoiceReminder::class);
+    }
+
+    /**
+     * Check if a specific reminder type has been sent.
+     */
+    public function hasReminderType(string $type): bool
+    {
+        return $this->reminders()
+            ->where('type', $type)
+            ->where('sent', true)
+            ->exists();
+    }
+
+    /**
+     * Get the last sent reminder.
+     */
+    public function getLastReminder()
+    {
+        return $this->reminders()
+            ->where('sent', true)
+            ->latest('sent_at')
+            ->first();
+    }
 
     /**
      * Get the client that owns the invoice.

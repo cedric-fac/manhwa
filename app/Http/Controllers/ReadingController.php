@@ -23,6 +23,16 @@ class ReadingController extends Controller
     }
 
     /**
+     * Show the form for creating a new reading.
+     */
+    public function create(Client $client)
+    {
+        return Inertia::render('Readings/Create', [
+            'client' => $client
+        ]);
+    }
+
+    /**
      * Store a newly created reading.
      */
     public function store(Request $request, Client $client)
@@ -31,6 +41,10 @@ class ReadingController extends Controller
             'value' => ['required', 'numeric', 'min:0'],
             'read_at' => ['required', 'date'],
             'photo' => ['required', 'image', 'max:5120'], // Max 5MB
+            'ocr_data' => ['nullable', 'array'],
+            'ocr_data.confidence' => ['required_with:ocr_data', 'numeric', 'between:0,100'],
+            'ocr_data.suggestions' => ['required_with:ocr_data', 'array'],
+            'ocr_data.text' => ['required_with:ocr_data', 'string'],
         ]);
 
         // Upload photo to Cloudinary
@@ -43,10 +57,22 @@ class ReadingController extends Controller
             $photo_url = Storage::disk('cloudinary')->url($path);
         }
 
+        // Prepare OCR metadata if provided
+        $metadata = null;
+        if ($request->has('ocr_data')) {
+            $metadata = [
+                'ocr' => array_merge($request->input('ocr_data'), [
+                    'processed_at' => now()->toIso8601String(),
+                    'selected_value' => $validated['value']
+                ])
+            ];
+        }
+
         $reading = $client->readings()->create([
             'value' => $validated['value'],
             'read_at' => $validated['read_at'],
             'photo_url' => $photo_url,
+            'metadata' => $metadata,
             'synced' => true
         ]);
 
@@ -76,6 +102,10 @@ class ReadingController extends Controller
             'readings.*.value' => ['required', 'numeric', 'min:0'],
             'readings.*.read_at' => ['required', 'date'],
             'readings.*.photo' => ['sometimes', 'string'], // Base64 encoded image
+            'readings.*.ocr_data' => ['nullable', 'array'],
+            'readings.*.ocr_data.confidence' => ['required_with:readings.*.ocr_data', 'numeric', 'between:0,100'],
+            'readings.*.ocr_data.suggestions' => ['required_with:readings.*.ocr_data', 'array'],
+            'readings.*.ocr_data.text' => ['required_with:readings.*.ocr_data', 'string'],
         ]);
 
         $results = [];
@@ -93,11 +123,23 @@ class ReadingController extends Controller
                     $photo_url = Storage::disk('cloudinary')->url($path);
                 }
 
+                // Prepare OCR metadata if provided
+                $metadata = null;
+                if (!empty($readingData['ocr_data'])) {
+                    $metadata = [
+                        'ocr' => array_merge($readingData['ocr_data'], [
+                            'processed_at' => now()->toIso8601String(),
+                            'selected_value' => $readingData['value']
+                        ])
+                    ];
+                }
+
                 $reading = Reading::create([
                     'client_id' => $readingData['client_id'],
                     'value' => $readingData['value'],
                     'read_at' => $readingData['read_at'],
                     'photo_url' => $photo_url,
+                    'metadata' => $metadata,
                     'synced' => true
                 ]);
 

@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
 
     // Meter Reading Routes
     Route::get('/clients/{client}/readings', [ReadingController::class, 'index'])->name('readings.index');
+    Route::get('/clients/{client}/readings/create', [ReadingController::class, 'create'])->name('readings.create');
     Route::post('/clients/{client}/readings', [ReadingController::class, 'store'])->name('readings.store');
     Route::get('/clients/{client}/readings/{reading}', [ReadingController::class, 'show'])->name('readings.show');
     Route::post('/readings/sync', [ReadingController::class, 'sync'])->name('readings.sync');
@@ -50,5 +51,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
     Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
 });
+
+// Dashboard Route
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 require __DIR__.'/auth.php';
