@@ -81,7 +81,7 @@ class OcrTest extends TestCase
         ]);
 
         // Assert file was stored
-        $this->assertFileExists('meter-readings/' . $this->client->id . '/' . $file->hashName());
+        $this->assertStorageHasFile('meter-readings/' . $this->client->id . '/' . $file->hashName());
     }
 
     #[Test]

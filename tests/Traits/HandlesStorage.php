@@ -27,7 +27,7 @@ trait HandlesStorage
     /**
      * Assert that a file exists in the test storage.
      */
-    protected function assertFileExists(string $path): void
+    protected function assertStorageHasFile(string $path): void
     {
         Storage::disk('test')->assertExists($path);
     }
@@ -35,7 +35,7 @@ trait HandlesStorage
     /**
      * Assert that a file does not exist in the test storage.
      */
-    protected function assertFileDoesNotExist(string $path): void
+    protected function assertStorageDoesNotHaveFile(string $path): void
     {
         Storage::disk('test')->assertMissing($path);
     }
@@ -43,7 +43,7 @@ trait HandlesStorage
     /**
      * Get the URL for a stored file.
      */
-    protected function getFileUrl(string $path): string
+    protected function getStorageFileUrl(string $path): string
     {
         return Storage::disk('test')->url($path);
     }
