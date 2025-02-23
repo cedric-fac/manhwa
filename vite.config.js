@@ -10,4 +10,14 @@ export default defineConfig({
         }),
         react(),
     ],
+    resolve: {
+        alias: {
+            '@': '/resources/js',
+        },
+    },
+    test: {
+        globals: true,
+        environment: 'jsdom',
+        setupFiles: ['./tests/setup.js'],
+    },
 });

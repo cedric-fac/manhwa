@@ -11,6 +11,7 @@ use App\Models\OcrTrainingData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 
 class OcrTest extends TestCase
 {
@@ -20,7 +21,12 @@ class OcrTest extends TestCase
     {
         parent::setUp();
 
-        $this->setupTestStorage();
+        // Set up storage
+        Storage::fake('test');
+        Storage::fake('cloudinary');
+
+        // Create meter-readings directory
+        Storage::disk('test')->makeDirectory('meter-readings');
 
         // Create admin user
         $this->admin = User::factory()->create([
@@ -42,11 +48,11 @@ class OcrTest extends TestCase
         Gate::define('review-ocr', fn(User $user) => $user->is_admin);
 
         $response = $this->actingAs($this->admin)
-            ->get(route('ocr.dashboard'));
+            ->getJson(route('ocr.dashboard'));
         $response->assertStatus(200);
 
         $response = $this->actingAs($this->user)
-            ->get(route('ocr.dashboard'));
+            ->getJson(route('ocr.dashboard'));
         $response->assertStatus(403);
     }
 
@@ -55,10 +61,13 @@ class OcrTest extends TestCase
     {
         Gate::define('review-ocr', fn(User $user) => $user->is_admin);
 
+        // Create client directory
+        Storage::disk('test')->makeDirectory("meter-readings/{$this->client->id}");
+
         $file = $this->createFakeMeterImage();
 
         $response = $this->actingAs($this->admin)
-            ->post(route('readings.store', $this->client->id), [
+            ->postJson(route('readings.store', $this->client->id), [
                 'value' => '12345',
                 'read_at' => now()->format('Y-m-d'),
                 'photo' => $file,
@@ -69,7 +78,7 @@ class OcrTest extends TestCase
                 ]
             ]);
 
-        $response->assertRedirect();
+        $response->assertStatus(200);
 
         // Assert reading was created
         $reading = Reading::latest()->first();
@@ -85,7 +94,8 @@ class OcrTest extends TestCase
         ]);
 
         // Assert file was stored
-        $this->assertStorageHasFile('meter-readings/' . $this->client->id . '/' . $file->hashName());
+        $expectedPath = "meter-readings/{$this->client->id}/{$file->hashName()}";
+        Storage::disk('test')->assertExists($expectedPath);
     }
 
     #[Test]
@@ -108,12 +118,12 @@ class OcrTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->admin)
-            ->post(route('ocr.update', $trainingData->id), [
+            ->postJson(route('ocr.update', $trainingData->id), [
                 'corrected_text' => '12346',
                 'feedback' => 'Correction of last digit'
             ]);
 
-        $response->assertRedirect();
+        $response->assertStatus(200);
         
         $this->assertDatabaseHas('ocr_training_data', [
             'id' => $trainingData->id,
@@ -170,7 +180,7 @@ class OcrTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->cleanupTestStorage();
+        Storage::disk('test')->deleteDirectory('meter-readings');
         parent::tearDown();
     }
 }

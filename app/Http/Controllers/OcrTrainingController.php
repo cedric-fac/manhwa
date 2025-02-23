@@ -9,20 +9,13 @@ use Illuminate\Support\Facades\Gate;
 
 class OcrTrainingController extends Controller
 {
-    /**
-     * Constructor to require authentication
-     */
     public function __construct()
     {
         $this->middleware(['auth']);
     }
 
-    /**
-     * Display the OCR training dashboard.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        // Check if user can review OCR
         Gate::authorize('review-ocr');
 
         $stats = OcrTrainingData::getStatistics();
@@ -32,29 +25,36 @@ class OcrTrainingController extends Controller
             ->latest()
             ->paginate(10);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'stats' => $stats,
+                'pendingReviews' => $pendingReviews
+            ]);
+        }
+
         return Inertia::render('Ocr/Dashboard', [
             'stats' => $stats,
             'pendingReviews' => $pendingReviews
         ]);
     }
 
-    /**
-     * Display the OCR review interface.
-     */
-    public function review(OcrTrainingData $trainingData)
+    public function review(Request $request, OcrTrainingData $trainingData)
     {
         Gate::authorize('review-ocr');
 
         $trainingData->load('reading.client');
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'trainingData' => $trainingData
+            ]);
+        }
 
         return Inertia::render('Ocr/Review', [
             'trainingData' => $trainingData
         ]);
     }
 
-    /**
-     * Update OCR training data with corrections.
-     */
     public function update(Request $request, OcrTrainingData $trainingData)
     {
         Gate::authorize('review-ocr');
@@ -76,20 +76,30 @@ class OcrTrainingController extends Controller
 
         event('ocr.training.reviewed', $trainingData);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Correction enregistrée avec succès',
+                'trainingData' => $trainingData
+            ]);
+        }
+
         return redirect()
             ->route('ocr.dashboard')
             ->with('success', 'Correction enregistrée avec succès');
     }
 
-    /**
-     * Display OCR performance statistics.
-     */
-    public function statistics()
+    public function statistics(Request $request)
     {
         Gate::authorize('view-ocr-statistics');
 
         $stats = OcrTrainingData::getStatistics();
         
+        if ($request->wantsJson()) {
+            return response()->json([
+                'stats' => $stats
+            ]);
+        }
+
         return Inertia::render('Ocr/Statistics', [
             'stats' => $stats
         ]);

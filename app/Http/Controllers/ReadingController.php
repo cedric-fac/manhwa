@@ -7,15 +7,23 @@ use App\Models\Reading;
 use App\Models\OcrTrainingData;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
 class ReadingController extends Controller
 {
-    public function index(Client $client)
+    public function index(Request $request, Client $client)
     {
         $readings = $client->readings()
             ->with(['trainingData'])
             ->latest('read_at')
             ->paginate(10);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'client' => $client,
+                'readings' => $readings
+            ]);
+        }
 
         return Inertia::render('Readings/Index', [
             'client' => $client,
@@ -23,8 +31,14 @@ class ReadingController extends Controller
         ]);
     }
 
-    public function create(Client $client)
+    public function create(Request $request, Client $client)
     {
+        if ($request->wantsJson()) {
+            return response()->json([
+                'client' => $client
+            ]);
+        }
+
         return Inertia::render('Readings/Create', [
             'client' => $client
         ]);
@@ -52,7 +66,20 @@ class ReadingController extends Controller
         $reading->save();
 
         if ($request->hasFile('photo')) {
-            $reading->addPhotoFromFile($request->file('photo'));
+            // Store file in the appropriate disk
+            $disk = config('filesystems.default');
+            $path = Storage::disk($disk)->putFile(
+                "meter-readings/{$client->id}",
+                $request->file('photo')
+            );
+
+            // Get the URL for the stored file
+            $url = Storage::disk($disk)->url($path);
+
+            // Update reading with photo URL
+            $reading->update([
+                'photo_url' => $url
+            ]);
         }
 
         // Store OCR training data if available
@@ -71,14 +98,28 @@ class ReadingController extends Controller
             ]);
         }
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Relevé enregistré avec succès',
+                'reading' => $reading->load('trainingData')
+            ]);
+        }
+
         return redirect()
             ->route('readings.index', $client)
             ->with('success', 'Relevé enregistré avec succès.');
     }
 
-    public function show(Client $client, Reading $reading)
+    public function show(Request $request, Client $client, Reading $reading)
     {
         $reading->load(['trainingData']);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'client' => $client,
+                'reading' => $reading
+            ]);
+        }
 
         return Inertia::render('Readings/Show', [
             'client' => $client,
