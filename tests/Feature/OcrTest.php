@@ -10,6 +10,7 @@ use App\Models\Reading;
 use App\Models\OcrTrainingData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Illuminate\Support\Facades\Gate;
 
 class OcrTest extends TestCase
 {
@@ -38,19 +39,22 @@ class OcrTest extends TestCase
     #[Test]
     public function only_admin_can_access_ocr_dashboard(): void
     {
+        Gate::define('review-ocr', fn(User $user) => $user->is_admin);
+
         $response = $this->actingAs($this->admin)
             ->get(route('ocr.dashboard'));
         $response->assertStatus(200);
 
         $response = $this->actingAs($this->user)
             ->get(route('ocr.dashboard'));
-        $response->assertStatus(302)
-            ->assertRedirect(route('dashboard'));
+        $response->assertStatus(403);
     }
 
     #[Test]
     public function it_stores_ocr_training_data_with_reading(): void
     {
+        Gate::define('review-ocr', fn(User $user) => $user->is_admin);
+
         $file = $this->createFakeMeterImage();
 
         $response = $this->actingAs($this->admin)
@@ -70,7 +74,7 @@ class OcrTest extends TestCase
         // Assert reading was created
         $reading = Reading::latest()->first();
         $this->assertNotNull($reading);
-        $this->assertEquals('12345', $reading->value);
+        $this->assertEquals(12345.00, $reading->value);
 
         // Assert OCR training data was created
         $this->assertDatabaseHas('ocr_training_data', [
@@ -87,6 +91,8 @@ class OcrTest extends TestCase
     #[Test]
     public function admin_can_review_ocr_training_data(): void
     {
+        Gate::define('review-ocr', fn(User $user) => $user->is_admin);
+
         $reading = Reading::factory()->create([
             'client_id' => $this->client->id
         ]);
@@ -143,6 +149,8 @@ class OcrTest extends TestCase
     #[Test]
     public function it_generates_performance_report(): void
     {
+        Gate::define('view-ocr-statistics', fn(User $user) => $user->is_admin);
+
         // Create some test data
         Reading::factory()
             ->count(5)

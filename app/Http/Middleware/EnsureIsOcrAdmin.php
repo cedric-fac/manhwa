@@ -10,19 +10,19 @@ class EnsureIsOcrAdmin
 {
     /**
      * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || !$request->user()->canReviewOcr()) {
+        if (!$request->user() || !$request->user()->is_admin) {
             if ($request->wantsJson()) {
                 return response()->json([
-                    'message' => 'Vous n\'avez pas la permission d\'accéder à l\'administration OCR.'
+                    'message' => 'Unauthorized: OCR admin access required.'
                 ], 403);
             }
 
-            return redirect()
-                ->route('dashboard')
-                ->with('error', 'Vous n\'avez pas la permission d\'accéder à l\'administration OCR.');
+            return redirect()->route('dashboard')->with('error', 'Unauthorized: OCR admin access required.');
         }
 
         return $next($request);

@@ -83,4 +83,9 @@ class Reading extends Model
         ]);
         $this->save();
     }
+
+    protected function formatValue($value)
+    {
+        return is_numeric($value) ? number_format($value, 2, '.', '') : $value;
+    }
 }

@@ -10,6 +10,14 @@ use Illuminate\Support\Facades\Gate;
 class OcrTrainingController extends Controller
 {
     /**
+     * Constructor to require authentication
+     */
+    public function __construct()
+    {
+        $this->middleware(['auth']);
+    }
+
+    /**
      * Display the OCR training dashboard.
      */
     public function index()
@@ -61,7 +69,8 @@ class OcrTrainingController extends Controller
             'verified' => true,
             'metadata' => array_merge($trainingData->metadata ?? [], [
                 'feedback' => $validated['feedback'],
-                'reviewed_at' => now()->toIso8601String()
+                'reviewed_at' => now()->toIso8601String(),
+                'reviewer_id' => $request->user()->id
             ])
         ]);
 
@@ -73,38 +82,11 @@ class OcrTrainingController extends Controller
     }
 
     /**
-     * Store new OCR training data.
-     */
-    public function store(Request $request, $readingId)
-    {
-        $validated = $request->validate([
-            'original_text' => 'required|string',
-            'confidence' => 'required|numeric',
-            'metadata' => 'required|array'
-        ]);
-
-        $trainingData = OcrTrainingData::create([
-            'reading_id' => $readingId,
-            'original_text' => $validated['original_text'],
-            'confidence' => $validated['confidence'],
-            'metadata' => $validated['metadata'],
-            'verified' => false
-        ]);
-
-        event('ocr.training.created', $trainingData);
-
-        return response()->json([
-            'message' => 'Données d\'entraînement OCR enregistrées',
-            'training_data' => $trainingData
-        ]);
-    }
-
-    /**
      * Display OCR performance statistics.
      */
     public function statistics()
     {
-        Gate::authorize('review-ocr');
+        Gate::authorize('view-ocr-statistics');
 
         $stats = OcrTrainingData::getStatistics();
         

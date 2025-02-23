@@ -22,8 +22,22 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register the review-ocr gate
         Gate::define('review-ocr', function (User $user) {
-            return $user->canReviewOcr();
+            return $user->is_admin;
+        });
+
+        // Register other OCR-related gates
+        Gate::define('manage-ocr', function (User $user) {
+            return $user->is_admin;
+        });
+
+        Gate::define('view-ocr-statistics', function (User $user) {
+            return $user->is_admin;
+        });
+
+        Gate::define('train-ocr', function (User $user) {
+            return $user->is_admin;
         });
     }
 }
